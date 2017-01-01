@@ -8,7 +8,7 @@ var roleHarvester = {
         var targetsource = creep.pos.findClosestByPath(FIND_SOURCES, {
           filter: (source) => {
             // seek out sources that have energy or will have it soon
-            return (source.energy > 0 || source.ticksToRegeneration <= 30)
+            return (source.energy > 0 || source.ticksToRegeneration <= 20)
           }
         });
         // if we are trying to spawn stuff and no accessible sources have energy,
@@ -23,11 +23,11 @@ var roleHarvester = {
           creep.moveTo(targetsource);
         }
       } else {
-        return 'depositing';
+        return sm.this_tick('deposit_targeting');
       }
     },
     /** @param {Creep} creep **/
-    depositing: function (creep) {
+    deposit_targeting: (creep) => {
       var target = creep.pos.findClosestByPath(FIND_STRUCTURES, {
         filter: (structure) => {
           if ((structure.structureType == STRUCTURE_EXTENSION ||
@@ -44,12 +44,25 @@ var roleHarvester = {
         }
       });
       if (target) {
+        creep.memory.deposit_target = target.id;
+        return sm.this_tick('depositing');
+      }
+    },
+    depositing: function (creep) {
+      var target = Game.getObjectById(creep.memory.deposit_target);
+      if (target) {
         if (creep.transfer(target, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
           creep.moveTo(target);
         }
       }
       if (creep.carry.energy == 0) {
-        return 'collecting';
+        return sm.this_tick('collecting');
+      }
+      // retarget it if our target has filled up or gone away
+      if (!target ||
+          (target.energy && target.energy == target.energyCapacity) ||
+          (target.store && _.sum(target.store) == target.storeCapacity)) {
+        return sm.this_tick('deposit_targeting');
       }
     }
   },

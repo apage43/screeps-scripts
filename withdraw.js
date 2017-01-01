@@ -10,7 +10,7 @@ module.exports = function withdraw(creep, idleAt) {
             // to spawn something
             return false;
           }
-          return true;
+          //return true;
         }
       }
       if (structure.structureType == STRUCTURE_CONTAINER) {

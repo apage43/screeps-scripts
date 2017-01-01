@@ -1,9 +1,9 @@
 var recall = require('recall').recall;
 
 var roleMinimums = {
-    'harvester': 8,
+    'harvester': 10,
     'builder': 1,
-    'upgrader': 6,
+    'upgrader': 2,
     'janitor': 1,
 }
 var rolePriority = ['defender', 'harvester', 'upgrader', 'builder', 'janitor']
@@ -26,7 +26,7 @@ function design(role, spawn) {
             body.push(MOVE);
             continue;
         }
-        // break conditions leave room for a MOVE 
+        // break conditions leave room for a MOVE
         if (roles[role].combat) {
             if (tough < attack * 2 || tough < 2) {
                 if (budget < 60) break;
@@ -128,20 +128,20 @@ module.exports.loop = function () {
 
     var creepsByRole = _.groupBy(Game.creeps, (creep) => creep.memory.role);
 
-   
+
     //spawn.room.memory.wantSpawn = false;
     for (var roleindex in rolePriority) {
         var role = rolePriority[roleindex];
         var targetCount = roleCounts[role];
         var creeps = creepsByRole[role];
         var n = 0;
-        if (creeps) n = creeps.length;  
+        if (creeps) n = creeps.length;
         if (n < targetCount) {
             spawnCreep(spawn, role);
             break;
-        }      
+        }
     }
-    
+
 
     var counts = {};
     for (var name in Game.creeps) {
@@ -172,5 +172,5 @@ module.exports.loop = function () {
         console.log(`Creep roles at tick ${Game.time}: ${report}`);
         console.log(`Creeps wanted: ${wanted}`);
     }
-    
+
 }
