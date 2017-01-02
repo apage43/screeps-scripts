@@ -29,6 +29,17 @@ var roleBuilder = {
                 return sm.this_tick('targeting');
         },
         targeting: (creep) => {
+            if (Game.flags['build_now']) {
+                let flag = Game.flags['build_now'];
+                if (creep.room == flag.room) {
+                    var sites = creep.room.lookForAt(LOOK_CONSTRUCTION_SITES, flag);
+                    if (sites.length > 0) {
+                        var target = sites[0];
+                        creep.memory.build_target = target.id;
+                        return sm.this_tick('building');
+                    }
+                }
+            }
             if (creep.carry.energy == 0) {
                 return sm.this_tick('charging');
             }

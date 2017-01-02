@@ -1,5 +1,8 @@
 // Attempt to withdraw energy from containers or extensions, finally falling back on harvesting.
 /** @param {Creep} creep **/
+
+var source_nice = false;
+
 module.exports = function withdraw(creep, idleAt) {
   var targetcontainer = creep.pos.findClosestByPath(FIND_STRUCTURES, {
     filter: (structure) => {
@@ -30,7 +33,7 @@ module.exports = function withdraw(creep, idleAt) {
       return;
     }
   }
-  if (creep.room.memory.wantSpawn) {
+  if (creep.room.memory.wantSpawn && source_nice) {
     // don't crowd out sources when we are in starvation mode
     if(idleAt) {
       creep.moveTo(idleAt)

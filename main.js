@@ -1,13 +1,22 @@
 var recall = require('recall').recall;
 
 var roleMinimums = {
-    'harvester': 10,
-    'builder': 1,
-    'upgrader': 2,
+    'harvester': 8,
+    'builder': 0,
+    'upgrader': 6,
     'janitor': 1,
+    'defender': 0,
 }
 var rolePriority = ['defender', 'harvester', 'upgrader', 'builder', 'janitor']
 var roles = {};
+
+var bodyPriority = {
+    TOUGH: 0,
+    CARRY: 1,
+    MOVE: 2,
+    WORK: 3,
+    ATTACK: 99,
+}
 
 function design(role, spawn) {
     var body = [];
@@ -59,12 +68,12 @@ function design(role, spawn) {
         body.push(WORK);
         continue;
     }
+    body = _.sortBy(body, (part) => bodyPriority[part]);
     return body;
 }
 
 var bodyOverrides = {
-    'upgrader': [MOVE, MOVE, WORK, WORK, WORK, CARRY],
-    'janitor': [MOVE, MOVE, CARRY, CARRY, WORK]
+
 }
 
 for (var role of rolePriority) {
@@ -125,6 +134,9 @@ module.exports.loop = function () {
     var roleCounts = _.clone(roleMinimums);
     roleCounts['defender'] = hostiles.length;
     roleCounts['builder'] += extraBuilders;
+    if (roleCounts['builder'] > 4) {
+        roleCounts['builder'] = 4;
+    }
 
     var creepsByRole = _.groupBy(Game.creeps, (creep) => creep.memory.role);
 
