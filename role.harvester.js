@@ -1,69 +1,39 @@
 var sm = require('statecreep');
 var withdraw = require('withdraw');
+var janitor = require('role.janitor');
+var targetcache = require('targetcache');
 var roleHarvester = {
   states: {
     /** @param {Creep} creep **/
-    collecting: function (creep) {
+    collecting: function (creep) {       
       if (creep.carry.energy < creep.carryCapacity) {
-        var targetsource = creep.pos.findClosestByPath(FIND_SOURCES, {
-          filter: (source) => {
-            // seek out sources that have energy or will have it soon
-            return (source.energy > 0 || source.ticksToRegeneration <= 20)
-          }
-        });
-        // if we are trying to spawn stuff and no accessible sources have energy,
-        // cannibalize our containers
-        if (!targetsource && creep.room.memory.wantSpawn) {
-          creep.say('starved');
-          withdraw(creep);
-          return;
+        var targetsource = targetcache(creep, 'targetsource', (creep) => creep.pos.findClosestByPath(FIND_SOURCES));
+        if (!targetsource) {
+          return 'janitorize';
         }
-        if (_.includes([ERR_NOT_IN_RANGE, ERR_NOT_ENOUGH_RESOURCES],
-          creep.harvest(targetsource))) {
-          creep.moveTo(targetsource);
+        let harvest = creep.harvest(targetsource);
+        if (harvest == ERR_NOT_IN_RANGE) {
+          let move = creep.moveTo(targetsource);
+          if (move == ERR_NO_PATH) {
+            return 'collect_target';
+          }
+        }
+        if (harvest == ERR_NOT_ENOUGH_RESOURCES) {
+          creep.drop(RESOURCE_ENERGY, creep.carry.energy);
+          return 'janitorize';
         }
       } else {
-        return sm.this_tick('deposit_targeting');
+
+        creep.drop(RESOURCE_ENERGY, creep.carry.energy);
       }
     },
-    /** @param {Creep} creep **/
-    deposit_targeting: (creep) => {
-      var target = creep.pos.findClosestByPath(FIND_STRUCTURES, {
-        filter: (structure) => {
-          if ((structure.structureType == STRUCTURE_EXTENSION ||
-            structure.structureType == STRUCTURE_SPAWN ||
-            structure.structureType == STRUCTURE_TOWER) && structure.energy < structure.energyCapacity) {
-            return true;
-          }
-          // skip containers if we are trying to spawn units
-          if (structure.structureType == STRUCTURE_CONTAINER &&
-            !creep.room.memory.wantSpawn &&
-            _.sum(structure.store) < structure.storeCapacity) {
-            return true;
-          }
-        }
-      });
-      if (target) {
-        creep.memory.deposit_target = target.id;
-        return sm.this_tick('depositing');
+    // Act as janitor if our source is empty
+    janitorize: (creep) => {
+      var targetsource = targetcache(creep, 'targetsource', (creep) => creep.pos.findClosestByPath(FIND_SOURCES));
+      if (targetsource && targetsource.energy > 0) {
+        return 'collecting';
       }
-    },
-    depositing: function (creep) {
-      var target = Game.getObjectById(creep.memory.deposit_target);
-      if (target) {
-        if (creep.transfer(target, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-          creep.moveTo(target);
-        }
-      }
-      if (creep.carry.energy == 0) {
-        return sm.this_tick('collecting');
-      }
-      // retarget it if our target has filled up or gone away
-      if (!target ||
-          (target.energy && target.energy == target.energyCapacity) ||
-          (target.store && _.sum(target.store) == target.storeCapacity)) {
-        return sm.this_tick('deposit_targeting');
-      }
+      sm.run(creep, janitor, 'janitor');
     }
   },
   defstate: 'collecting',

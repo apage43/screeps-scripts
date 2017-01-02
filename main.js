@@ -1,13 +1,13 @@
 var recall = require('recall').recall;
 
 var roleMinimums = {
-    'harvester': 8,
-    'builder': 0,
+    'harvester': 6,
+    'builder': 1,
     'upgrader': 6,
-    'janitor': 1,
+    'janitor': 3,
     'defender': 0,
 }
-var rolePriority = ['defender', 'harvester', 'upgrader', 'builder', 'janitor']
+var rolePriority = ['defender', 'harvester', 'janitor', 'upgrader', 'builder']
 var roles = {};
 
 var bodyPriority = {
@@ -73,11 +73,21 @@ function design(role, spawn) {
 }
 
 var bodyOverrides = {
-
+    'janitor': [MOVE, MOVE, CARRY, CARRY, CARRY, CARRY]
 }
 
 for (var role of rolePriority) {
     roles[role] = require('role.' + role);
+}
+
+function namegen(role) {
+    var n = 0;
+    var name;
+    do {
+        name = `${role}_${n}`;
+        n++;
+    } while (Game.creeps[name]);
+    return name;
 }
 
 function spawnCreep(spawn, role) {
@@ -85,7 +95,7 @@ function spawnCreep(spawn, role) {
     if (bodyOverrides[role]) {
         body = bodyOverrides[role];
     }
-    var ret = spawn.createCreep(body, undefined, { role: role });
+    var ret = spawn.createCreep(body, namegen(role), { role: role });
     if (ret < 0) {
         if (!spawn.room.memory.wantSpawn) {
             spawn.room.memory.wantSpawn = true;
@@ -101,6 +111,7 @@ function spawnCreep(spawn, role) {
     }
     return ret;
 }
+
 
 module.exports.loop = function () {
 

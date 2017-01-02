@@ -1,22 +1,28 @@
 var withdraw = require('withdraw');
 var sm = require('statecreep');
+var targetcache = require('targetcache');
 
 function repair(creep, thresh = 1.0) {
     // if nothing to build, repair stuff.
-    var targets = creep.room.find(FIND_STRUCTURES, {
-        filter: object => object.hits < (object.hitsMax * thresh)
-    });
+    var target = targetcache(creep, `repair_target_${thresh}`, (creep) => {
+        var targets = creep.room.find(FIND_STRUCTURES, {
+            filter: object => object.hits < (object.hitsMax * thresh)
+        });
 
-    targets.sort((a, b) => a.hits - b.hits);
+        targets.sort((a, b) => a.hits - b.hits);
 
-    if (targets.length > 0) {
-        if (creep.repair(targets[0]) == ERR_NOT_IN_RANGE) {
-            creep.moveTo(targets[0]);
-            return true;
-        } else {
-            return true;
+        if (targets.length > 0) {
+            return targets[0];
         }
+    });
+    
+    if (creep.repair(targets) == ERR_NOT_IN_RANGE) {
+        creep.moveTo(targets);
+        return true;
+    } else {
+        return true;
     }
+
     return false;
 }
 

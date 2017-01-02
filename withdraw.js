@@ -4,6 +4,20 @@
 var source_nice = false;
 
 module.exports = function withdraw(creep, idleAt) {
+  var targetpile = creep.pos.findClosestByPath(FIND_DROPPED_RESOURCES, {
+      filter: (rsrc) => rsrc.resourceType == RESOURCE_ENERGY
+  });
+  
+  if (targetpile) {
+    let pickup = creep.pickup(targetpile);
+    if (pickup == ERR_NOT_IN_RANGE) {
+      creep.moveTo(targetpile);
+      return;
+    }
+    if (pickup == OK) {
+      return;
+    }
+  }
   var targetcontainer = creep.pos.findClosestByPath(FIND_STRUCTURES, {
     filter: (structure) => {
       if (structure.structureType == STRUCTURE_EXTENSION) {
@@ -37,8 +51,6 @@ module.exports = function withdraw(creep, idleAt) {
     // don't crowd out sources when we are in starvation mode
     if(idleAt) {
       creep.moveTo(idleAt)
-    } else {
-      creep.moveTo(Game.flags['Idlers'])
     }
     return;
   }
